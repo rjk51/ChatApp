@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:chat_it/widgets/user_image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -12,7 +12,9 @@ class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
   @override
-  State<AuthScreen> createState() => _AuthScreenState();
+  State<AuthScreen> createState() {
+    return _AuthScreenState();
+  }
 }
 
 class _AuthScreenState extends State<AuthScreen> {
@@ -23,15 +25,13 @@ class _AuthScreenState extends State<AuthScreen> {
   var _enteredPassword = '';
   var _enteredUsername = '';
   File? _selectedImage;
-  var _isAuth = false;
+  var _isAuthenticating = false;
 
   void _submit() async {
     final isValid = _form.currentState!.validate();
 
     if (!isValid || !_isLogin && _selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Please pick an image.'),
-      ));
+      // show error message ...
       return;
     }
 
@@ -39,18 +39,15 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       setState(() {
-        _isAuth = true;
+        _isAuthenticating = true;
       });
       if (_isLogin) {
         final userCredentials = await _firebase.signInWithEmailAndPassword(
-          email: _enteredEmail,
-          password: _enteredPassword,
-        );
+            email: _enteredEmail, password: _enteredPassword);
       } else {
         final userCredentials = await _firebase.createUserWithEmailAndPassword(
-          email: _enteredEmail,
-          password: _enteredPassword,
-        );
+            email: _enteredEmail, password: _enteredPassword);
+
         final storageRef = FirebaseStorage.instance
             .ref()
             .child('user_images')
@@ -59,7 +56,10 @@ class _AuthScreenState extends State<AuthScreen> {
         await storageRef.putFile(_selectedImage!);
         final imageUrl = await storageRef.getDownloadURL();
 
-        await FirebaseFirestore.instance.collection('users').doc(userCredentials.user!.uid).set({
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredentials.user!.uid)
+            .set({
           'username': _enteredUsername,
           'email': _enteredEmail,
           'image_url': imageUrl,
@@ -67,14 +67,16 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } on FirebaseAuthException catch (error) {
       if (error.code == 'email-already-in-use') {
-        //
+        // ...
       }
       ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(error.message ?? 'Authentication failed.'),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.message ?? 'Authentication failed.'),
+        ),
+      );
       setState(() {
-        _isAuth = false;
+        _isAuthenticating = false;
       });
     }
   }
@@ -126,20 +128,23 @@ class _AuthScreenState extends State<AuthScreen> {
                                   !value.contains('@')) {
                                 return 'Please enter a valid email address.';
                               }
+
                               return null;
                             },
                             onSaved: (value) {
                               _enteredEmail = value!;
                             },
                           ),
-                          if(!_isLogin)
+                          if (!_isLogin)
                             TextFormField(
                               decoration:
                                   const InputDecoration(labelText: 'Username'),
                               enableSuggestions: false,
                               validator: (value) {
-                                if (value == null || value.isEmpty || value.trim().length < 4) {
-                                  return 'Please enter atleast 4 characters.)';
+                                if (value == null ||
+                                    value.isEmpty ||
+                                    value.trim().length < 4) {
+                                  return 'Please enter at least 4 characters.';
                                 }
                                 return null;
                               },
@@ -153,7 +158,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             obscureText: true,
                             validator: (value) {
                               if (value == null || value.trim().length < 6) {
-                                return 'Password must be atleast 6 characters long.';
+                                return 'Password must be at least 6 characters long.';
                               }
                               return null;
                             },
@@ -162,9 +167,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             },
                           ),
                           const SizedBox(height: 12),
-                          if(_isAuth)
+                          if (_isAuthenticating)
                             const CircularProgressIndicator(),
-                          if(!_isAuth)
+                          if (!_isAuthenticating)
                             ElevatedButton(
                               onPressed: _submit,
                               style: ElevatedButton.styleFrom(
@@ -174,7 +179,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               ),
                               child: Text(_isLogin ? 'Login' : 'Signup'),
                             ),
-                          if(_isAuth)
+                          if (!_isAuthenticating)
                             TextButton(
                               onPressed: () {
                                 setState(() {

@@ -28,24 +28,25 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Chat.it'),
-          actions: [
-            IconButton(
-                onPressed: () {
-                  FirebaseAuth.instance.signOut();
-                },
-                icon: Icon(
-                  Icons.exit_to_app,
-                  color: Theme.of(context).colorScheme.primary,
-                ))
-          ],
-        ),
-        body: const Column(
-          children: [
-            Expanded(child: ChatMessages()),
-            NewMessage(),
-          ],
-        ));
+      appBar: AppBar(
+        title: const Text('Chat.it'),
+        actions: [
+          IconButton(
+              onPressed: () {
+                FirebaseAuth.instance.signOut();
+              },
+              icon: Icon(
+                Icons.exit_to_app,
+                color: Theme.of(context).colorScheme.primary,
+              ))
+        ],
+      ),
+      body: const Column(
+        children: [
+          Expanded(child: ChatMessages()),
+          NewMessage(),
+        ],
+      )
+    );
   }
 }
